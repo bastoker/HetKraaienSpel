@@ -5,6 +5,8 @@
  */
 var player;
 
+var background, solid;
+
 /**
  * Keys used for various directions.
  *
@@ -17,32 +19,49 @@ var player;
  * set.
  */
 var keys = {
-  up: ['up', 'w'],
-  down: ['down', 's'],
-  left: ['left', 'a'],
-  right: ['right', 'd'],
+    up: ['up', 'w'],
+    down: ['down', 's'],
+    left: ['left', 'a'],
+    right: ['right', 'd'],
 };
 
 /**
  * An array of image file paths to pre-load.
  */
-var preloadables = [];
+var preloadables = [
+    'assets/kraai.png',
+    'assets/kraai-animated2.png',
+    'assets/kraai-animated.png',
+    'assets/eikel.png',
+    'assets/kuikentje.png',
+    'assets/logo.png',
+    'assets/logo-repeated.png',
+    'assets/walnoot.png',
+    'assets/ei.png'
+];
+
+var crowcall = new Audio('crow-call.mp3');
 
 /**
  * A magic-named function where all updates should occur.
  */
 function update() {
-  player.update();
+    player.update();
+
+    // enforce collision
+    player.collideSolid(solid);
 }
 
 /**
  * A magic-named function where all drawing should occur.
  */
 function draw() {
-  // Draw a background. This is just for illustration so we can see scrolling.
-  context.drawCheckered(80, 0, 0, world.width, world.height);
-
-	player.draw();
+    // Draw a background. This is just for illustration so we can see scrolling.
+    // context.drawCheckered(80, 0, 0, world.width, world.height);
+    background.draw();
+    solid.draw();
+    player.draw();
+    hud.draw();
 }
 
 /**
@@ -53,12 +72,50 @@ function draw() {
  *   been reset and is starting over.
  */
 function setup(first) {
-  // Change the size of the playable area. Do this before placing items!
-  world.resize(canvas.width + 200, canvas.height + 200);
+    // Change the size of the playable area. Do this before placing items!
+    world.resize(canvas.width + 3000, canvas.height + 200);
 
-  // Switch from side view to top-down.
-  Actor.prototype.GRAVITY = false;
+    // Switch from side view to top-down.
+    Actor.prototype.GRAVITY = true;
 
-  // Initialize the player.
-  player = new Player();
+    // Add terrain.
+    var grid =  "         B      AII            \n" +
+                "              BBBBBK           \n" +
+                "      EB    BBBBBBBBBB  IBEEII ";
+    solid = new TileMap(grid, {B: 'assets/walnoot.png', E: 'assets/ei.png', I: 'assets/eikel.png', K: 'assets/kuikentje.png'});
+
+    background = new Layer({width: world.width, height: 800, src: 'assets/logo.png'});
+
+// Set up the Heads-Up Display layer.
+// This layer will stay in place even while the world scrolls.
+    hud = new Layer({relative: 'canvas'});
+    hud.context.font = '30px Arial';
+    hud.context.textAlign = 'right';
+    hud.context.textBaseline = 'top';
+    hud.context.fillStyle = 'black';
+    hud.context.strokeStyle = 'rgba(211, 211, 211, 0.5)';
+    hud.context.lineWidth = 5;
+    hud.context.strokeText('Score: 0', canvas.width - 15, 10);
+    hud.context.fillText('Score: 0', canvas.width - 15, 10);
+
+    // Initialize the player.
+    player = new Player(200, 200, 120, 120);
+    // player.DAMPING_FACTOR = 10;
+    player.MULTI_JUMP = -1;
+    player.G_CONST = 10;
+    player.src = new SpriteMap('assets/kraai-animated2.png', {
+        stand: [0, 5, 0, 5],
+        fall: [0, 5, 1, 5, true],
+        left: [0, 0, 0, 4],
+        right: [1, 0, 1, 4],
+        lookLeft: [0, 2, 0, 2],
+        lookRight: [1, 2, 1, 2],
+        jumpLeft: [0, 4, 0, 4],
+        jumpRight: [1, 4, 1, 4],
+    }, {
+        frameW:399,
+        frameH: 410,
+        interval: 75,
+        useTimer: false,
+    });
 }
