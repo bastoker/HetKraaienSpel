@@ -79,10 +79,10 @@ function setup(first) {
     Actor.prototype.GRAVITY = true;
 
     // Add terrain.
-    var grid =  "         B      AII            \n" +
+    var grid =  "                AII  AAAA      \n" +
                 "              BBBBBK           \n" +
                 "      EB    BBBBBBBBBB  IBEEII ";
-    solid = new TileMap(grid, {B: 'assets/walnoot.png', E: 'assets/ei.png', I: 'assets/eikel.png', K: 'assets/kuikentje.png'});
+    solid = new TileMap(grid, {B: 'assets/walnoot.png', E: 'assets/ei.png', I: 'assets/eikel.png', K: 'assets/kuikentje.png', A: 'assets/aarde.png'});
 
     background = new Layer({width: world.width, height: 800, src: 'assets/logo.png'});
 
@@ -103,18 +103,20 @@ function setup(first) {
     // player.DAMPING_FACTOR = 10;
     player.MULTI_JUMP = -1;
     player.G_CONST = 10;
-    player.src = new SpriteMap('assets/kraai-animated2.png', {
-        stand: [0, 5, 0, 5],
-        fall: [0, 5, 1, 5, true],
+    player.src = new SpriteMap('assets/kraai-animated.png', {
+        stand: [1, 5, 1, 5],
+        //fall: [1, 5, 1, 5, true],
         left: [0, 0, 0, 4],
         right: [1, 0, 1, 4],
         lookLeft: [0, 2, 0, 2],
         lookRight: [1, 2, 1, 2],
-        jumpLeft: [0, 4, 0, 4],
-        jumpRight: [1, 4, 1, 4],
+        jumpLeft: [0, 6, 0, 8],
+        jumpRight: [1, 6, 1, 8],
+        fall: [1, 6, 1, 8],
+        jump: [1, 6, 1, 8],
     }, {
-        frameW:399,
-        frameH: 410,
+        frameW: 662,
+        frameH: 680,
         interval: 75,
         useTimer: false,
     });
