@@ -123,3 +123,4 @@ HTML and CSS, .htaccess, and robots.txt rules originated. Thanks also to
 [JSDuck](https://github.com/senchalabs/jsduck/) for providing the framework for
 the documentation site, and to Atari for the original image used to derive the
 centipede example sprite.
+# HetKraaienSpel
