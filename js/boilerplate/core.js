@@ -1399,7 +1399,7 @@ App.gameOver = function(text) {
   // This runs during update() before the final draw(), so we have to delay it.
   setTimeout(function() {
     context.save();
-    context.font = '100px Arial';
+    context.font = '50px Verdana';
     context.fillStyle = 'black';
     context.strokeStyle = 'lightGray';
     context.textBaseline = 'middle';

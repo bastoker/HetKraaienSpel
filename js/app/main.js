@@ -8,13 +8,14 @@
  */
 var player;
 
-var background, solid, purpleTree, eggs = [];
+var background, solid, purpleTrees = new Collection();
 
 /**
  * All flying bullets in our world.
  */
 var bullets = new Collection();
-var enemies = [];
+var enemies = new Collection();
+var eggs = new Collection();
 var timer = new Timer();
 
 var throwing = false;
@@ -83,6 +84,7 @@ var preloadables = [
     'assets/kraai-animated.png',
     'assets/AnimatedCrows.png',
     'assets/eikel.png',
+    'assets/acorn.png',
     'assets/kuikentje.png',
     'assets/logo.png',
     'assets/logo-repeated.png',
@@ -100,7 +102,58 @@ var preloadables = [
 
 var crowcall = new Audio('crow-call.mp3');
 
-var Egg = GridAddableActor.extend({
+/**
+ * The Acorn 'Bullets from e.g. an Owl' class.
+ */
+var Acorn = Actor.extend({
+    // Override Actor default properties.
+    MOVEAMOUNT: 650, // Bullet velocity in pixels per second
+    GRAVITY: false, // Just keep going rather than falling down
+    CONTINUOUS_MOVEMENT: true, // Keep going in the last specified direction
+    STAY_IN_WORLD: false, // Let our bullets leave the world (we'll destroy them when they do)
+    DEFAULT_WIDTH: 80,
+    DEFAULT_HEIGHT: 45,
+    src: 'assets/acorn.png',
+    /**
+     * Initialize a thrown Acorn.
+     *
+     * @param direction
+     *   An array of keys representing the Bullet's initial direction.
+     * @param x
+     *   The x-coordinate of the top-left corner of the Bullet.
+     * @param y
+     *   The y-coordinate of the top-left corner of the Bullet.
+     */
+    init: function(direction, x, y) {
+        // Invoke the parent's init() function, Actor.prototype.init().
+        this._super(x, y);
+        // Store the direction we want the bullet to go. The CONTINUOUS_MOVEMENT
+        // setting uses this property to keep going in the specified direction.
+        this.lastLooked = direction;
+    },
+    /**
+     * Override drawDefault() to draw a bullet when there isn't an image associated with it (src === null).
+     */
+    drawDefault: function(ctx, x, y, w, h) {
+        // This draws a circle onto the graphics context (i.e. the canvas).
+        // Parameters are x-coordinate of center, y-coordinate of center, radius, fill color, border color
+        ctx.circle(x + w/2, y + w/2, (w + h) / 4, 'orange', 'black');
+    },
+});
+
+//
+// Util functions (mostly lodash) below
+//
+
+function pairwise(list) {
+    if (list.length < 2) { return []; }
+    var first = _.first(list),
+        rest  = _.tail(list),
+        pairs = _.map(rest, function (x) { return [first, x]; });
+    return _.flatten([pairs, pairwise(rest)], true);
+}
+
+var Egg = Actor.extend({
     init: function (x, y, w, h) {
         this._super.apply(this, [1, 1, 80, 80, 'assets/ei.png']);
     },
@@ -141,13 +194,17 @@ function update() {
 
     bullets.forEach(function(bullet) {
         bullet.update();
+        if (bullet.overlaps(player)) {
+            App.gameOver('Je hebt verloren van de gemene uilen :-(');
+        }
         // Returning true removes the bullet from the collection.
         // Destroy the bullet if it hits a solid or goes out of the world.
-        return /* bullet.collides(solid) || */ !world.isInWorld(bullet, true);
+        return bullet.collides(solid) || !world.isInWorld(bullet, true);
     });
 
     // enforce collision
     player.collideSolid(solid);
+
 
     if (castle.overlaps(player)) {
         App.gameOver("Je Hebt Gewonnen!");
@@ -168,23 +225,20 @@ function update() {
         })(asdf);
     }
 
-    var closures = [];
-
-    function createClosure(i, owl) {
-        closures[i] = function() {
+    function createClosure(owl) {
+        (function IFFE() {
             owl.src.runOnce((function (owl) {
                 return function fn(spr) {
                     var acorn = new Acorn(keys.left, owl.xC() - 80, owl.yC() - 50);
                     bullets.add(acorn);
                     spr.spriteMap.runOnce(function (spr2) {
-                        // console.log(s);
                         if (owl.xC() !== undefined) {
                             spr2.spriteMap.start('stand');
                         }
                     }, 'recoil');
                 };
             })(owl), 'throw');
-        };
+        })();
     }
 
     // Throw the acorn baby
@@ -192,14 +246,8 @@ function update() {
         throwing = true;
 
         for(var i = 0; i < 5; i++) {
-            createClosure(i, enemies[i]);
+            createClosure(enemies[i]);
         }
-
-        closures[0]();
-        closures[1]();
-        closures[2]();
-        closures[3]();
-        closures[4]();
     }
     if (throwing && timer.getElapsedTime() > 9) {
         timer.stop();
@@ -213,16 +261,12 @@ function update() {
  */
 function draw() {
     background.draw();
-    purpleTree.draw();
+    purpleTrees.draw();
     solid.draw();
     castle.draw();
     player.draw();
-    enemies.forEach(function(enemy) {
-        enemy.draw();
-    });
-
+    enemies.draw();
     bullets.draw();
-
     hud.draw();
 
     // Timer
@@ -264,28 +308,18 @@ function setup(first) {
         });
     };
 
-    var eggFactory = {
-        isGridFactory: true,
-        create: function() {
-            var newEgg = new Egg();
-            eggs.otherEggs = eggs.slice();
-            eggs.push(newEgg);
-            return newEgg;
-        }
-    };
-
     var Owl = Actor.extend({
         init: function (x, y, w, h) {
             this._super.apply(this, [x, y - 40, 140, 120]);
             this.src = new SpriteMap('assets/small8bitowls.png', {
                 stand: [0, 0, 0, 0],
                 ready: [0, 1, 0, 1],
-                throw: [0, 1, 0, 6],
+                throw: [0, 1, 0, 5],
                 recoil: [0, 6, 0, 9],
             }, {
                 frameW: 192, /* orig: 662 */
                 frameH: 200, /* orig: 680 */
-                interval: 120,
+                interval: 80,
                 useTimer: true,
             });
         }
@@ -330,7 +364,7 @@ function setup(first) {
 
     solid = new TileMap(grid, {
         W: defaultBox('assets/walnoot.png'),
-        E: eggFactory,
+        E: Egg,
         I: defaultBox('assets/eikel.png'),
         K: defaultBox('assets/kuikentje.png'),
         A: defaultBox('assets/aarde.png'),
@@ -348,16 +382,21 @@ function setup(first) {
             solid.clearCell(i, j);
             enemies.add(o);
         }
+        if (o instanceof PurpleTree) {
+            solid.clearCell(i, j);
+            purpleTrees.add(o);
+        }
+
     });
 
-    purpleTree = new PurpleTree(height * 80 - 2170, world.height-660, 300, 600);
+    // var purpleTree = new PurpleTree(height * 80 - 2170, world.height-660, 300, 600);
 
     background = new Layer({width: world.width, src: 'assets/achtergrond.png'});
 
     // Set up the Heads-Up Display layer.
     // This layer will stay in place even while the world scrolls.
     hud = new Layer({relative: 'canvas'});
-    hud.context.font = '30px Verdana';
+    hud.context.font = '20px Verdana';
     hud.context.textAlign = 'right';
     hud.context.textBaseline = 'top';
     hud.context.fillStyle = 'black';
