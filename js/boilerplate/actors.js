@@ -1187,12 +1187,14 @@ var Actor = Box.extend({
             (typeof TileMap !== 'undefined' && collideWith instanceof TileMap)) {
             var items = collideWith.getAll();
             for (var i = 0, l = items.length; i < l; i++) {
-                var c = this._collideSolidBox(items[i]);
-                if (c.x) {
-                    collided.x = c.x;
-                }
-                if (c.y) {
-                    collided.y = c.y;
+                if (!items[i].excludeFromDefaultCollision) {
+                    var c = this._collideSolidBox(items[i]);
+                    if (c.x) {
+                        collided.x = c.x;
+                    }
+                    if (c.y) {
+                        collided.y = c.y;
+                    }
                 }
             }
         }

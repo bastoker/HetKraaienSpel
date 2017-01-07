@@ -29,7 +29,7 @@ canvas {
   -webkit-tap-highlight-color: rgba(0,0,0,0);
   -webkit-touch-callout: none;
   background-color: #FFFFFF;
-  border: 1px solid black;
+  border: 0;
   display: block;
   margin: 0 auto;
   user-select: none;

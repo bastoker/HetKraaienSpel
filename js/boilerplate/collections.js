@@ -389,6 +389,11 @@ function TileMap(grid, map, options) {
         else if (o instanceof Function) {
           this.grid[i][j] = new (Function.prototype.bind.call(o, null, x, y, cw, ch))();
         }
+        else if (o.isGridFactory !== 'undefined') {
+          var newlyCreatedObject = o.create();
+          this.grid[i][j] = newlyCreatedObject;
+          newlyCreatedObject.setLocation(x, y);
+        }
         else { // fallback
           this.grid[i][j] = null;
         }
