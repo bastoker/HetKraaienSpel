@@ -168,9 +168,23 @@ function update() {
         })(asdf);
     }
 
-    function throwAcorn(s) {
-        var abc = s;
-        s.src.runOnce(makeAcornCallback(abc), 'throw');
+    var closures = [];
+
+    function createClosure(i, owl) {
+        closures[i] = function() {
+            owl.src.runOnce((function (owl) {
+                return function fn(spr) {
+                    var acorn = new Acorn(keys.left, owl.xC() - 80, owl.yC() - 50);
+                    bullets.add(acorn);
+                    spr.spriteMap.runOnce(function (spr2) {
+                        // console.log(s);
+                        if (owl.xC() !== undefined) {
+                            spr2.spriteMap.start('stand');
+                        }
+                    }, 'recoil');
+                };
+            })(owl), 'throw');
+        };
     }
 
     // Throw the acorn baby
@@ -178,8 +192,14 @@ function update() {
         throwing = true;
 
         for(var i = 0; i < 5; i++) {
-            throwAcorn(enemies[i]);
+            createClosure(i, enemies[i]);
         }
+
+        closures[0]();
+        closures[1]();
+        closures[2]();
+        closures[3]();
+        closures[4]();
     }
     if (throwing && timer.getElapsedTime() > 9) {
         timer.stop();
@@ -257,21 +277,17 @@ function setup(first) {
     var Owl = Actor.extend({
         init: function (x, y, w, h) {
             this._super.apply(this, [x, y - 40, 140, 120]);
-            this.src.use('stand');
-        },
-        src: new SpriteMap('assets/small8bitowls.png', {
-            stand: [0, 0, 0, 0],
-            ready: [0, 1, 0, 1],
-            throw: [0, 1, 0, 6],
-            recoil: [0, 6, 0, 9]
-        }, {
-            frameW: 192, /* orig: 662 */
-            frameH: 200, /* orig: 680 */
-            interval: 120,
-            useTimer: true,
-        }),
-        stoodOn: function (actor) {
-            actor.DAMPING_FACTOR = null;
+            this.src = new SpriteMap('assets/small8bitowls.png', {
+                stand: [0, 0, 0, 0],
+                ready: [0, 1, 0, 1],
+                throw: [0, 1, 0, 6],
+                recoil: [0, 6, 0, 9],
+            }, {
+                frameW: 192, /* orig: 662 */
+                frameH: 200, /* orig: 680 */
+                interval: 120,
+                useTimer: true,
+            });
         }
     });
 
