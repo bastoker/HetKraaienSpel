@@ -103,12 +103,12 @@ var crowcall = new Audio('crow-call.mp3');
  */
 var Acorn = Actor.extend({
     // Override Actor default properties.
-    MOVEAMOUNT: 650, // Bullet velocity in pixels per second
+    MOVEAMOUNT: 520, // Bullet velocity in pixels per second
     GRAVITY: false, // Just keep going rather than falling down
     CONTINUOUS_MOVEMENT: true, // Keep going in the last specified direction
     STAY_IN_WORLD: false, // Let our bullets leave the world (we'll destroy them when they do)
-    DEFAULT_WIDTH: 80,
-    DEFAULT_HEIGHT: 45,
+    DEFAULT_WIDTH: 60,
+    DEFAULT_HEIGHT: 34,
     src: 'assets/acorn.png',
     /**
      * Initialize a thrown Acorn.
@@ -145,8 +145,8 @@ var Chestnut = Actor.extend({
     GRAVITY: true, // Just keep going rather than falling down
     CONTINUOUS_MOVEMENT: false, // Keep going in the last specified direction
     STAY_IN_WORLD: false, // Let our bullets leave the world (we'll destroy them when they do)
-    DEFAULT_WIDTH: 60,
-    DEFAULT_HEIGHT: 60,
+    DEFAULT_WIDTH: 45,
+    DEFAULT_HEIGHT: 45,
 
     src: new SpriteMap('assets/small8bitchestnut.png', {
         stand: [0, 0, 0, 8],
@@ -286,31 +286,11 @@ function update() {
     // enforce collision
     player.collideSolid(solid);
 
-
-    if (castle.overlaps(player)) {
-        App.gameOver("Je Hebt Gewonnen!");
-    }
-
-    function throwAcornRecoil(ene) {
-        return function(y) {
-            y.src.start('ready');
-        }(ene);
-    }
-
-    function makeAcornCallback(asdf) {
-        return (function abc(h) {
-            return function() {
-                console.log(h);
-                bullets.add(new Acorn(keys.left, h.xC() - 80, h.yC() - 50));
-            }
-        })(asdf);
-    }
-
     function createClosure(owl) {
         (function IFFE() {
             owl.src.runOnce((function (owl) {
                 return function fn(spr) {
-                    var acorn = new Acorn(keys.left, owl.xC() - 80, owl.yC() - 50);
+                    var acorn = new Acorn(keys.left, owl.xC() - 60, owl.yC() - 37);
                     bullets.add(acorn);
                     spr.spriteMap.runOnce(function (spr2) {
                         if (owl.xC() !== undefined) {
@@ -394,7 +374,7 @@ function setup(first) {
 
     var Owl = Actor.extend({
         init: function (x, y, w, h) {
-            this._super.apply(this, [x, y - 40, 130, 130]);
+            this._super.apply(this, [x, y - 17, 97, 97]);
             this.src = new SpriteMap('assets/small8bitowlsWithDeadOwls.png', {
                 stand: [0, 0, 0, 0],
                 ready: [0, 1, 0, 1],
@@ -408,7 +388,7 @@ function setup(first) {
                 frameW: 192, /* orig: 662 */
                 frameH: 200, /* orig: 680 */
                 interval: 75,
-                useTimer: true,
+                useTimer: false,
             });
         },
         status: 'alive'
@@ -416,7 +396,7 @@ function setup(first) {
 
     var PurpleTree = Actor.extend({
         init: function (x, y, w, h) {
-            this._super.apply(this, [x - 90, y - 490, 300, 576]);
+            this._super.apply(this, [x - 67, y - 349, 225, 432]);
         },
         src: 'assets/paarseboom-small.png',
         stoodOn: function (actor) {
@@ -428,8 +408,8 @@ function setup(first) {
     var grid =  "                                                              \n" +
                 "                        U  U                                  \n" +
                 "                        AAAA                                  \n" +
+                "                    U                                         \n" +
                 "                                                              \n" +
-                "                  U                                           \n" +
                 "                         U  U                                 \n" +
                 "                   P     AAAA                                 \n" +
                 "                   AAA                                        \n" +
@@ -437,19 +417,19 @@ function setup(first) {
                 "                                                              \n" +
                 "     W E  K    AA                                             \n" +
                 " AAAAAAAAAA                             U                     \n" +
-                "                       U  YYYYYYYYYYYYYYYYYY                  \n" +
+                "                        U YYYYYYYYYYYYYYYYYY                  \n" +
                 "                                                              \n" +
                 "             E                                                \n" +
                 "           E E         P          E                  U        \n" +
                 "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
-    var height = grid.indexOf("\n") * 80;
-    var width = grid.substring(0, grid.indexOf("\n")).length * 80;
+    var height = grid.indexOf("\n") * 60;
+    var width = grid.substring(0, grid.indexOf("\n")).length * 60;
 
     // Change the size of the playable area. Do this before placing items!
     world.resize(5000, height);
 
-    castle = new Box(grid.indexOf("\n")*80-250, world.height-320, 240, 240);
+    castle = new Box(grid.indexOf("\n")*60-150, world.height-220, 180, 180);
     castle.src = 'assets/kasteel.png';
 
     solid = new TileMap(grid, {
@@ -527,7 +507,7 @@ function setup(first) {
     // Add controls if touch is enabled (e.g. for iPad)
 
     // Initialize the player.
-    player = new Player(200, 200, 120, 120);
+    player = new Player(150, 150, 90, 90);
     player.MULTI_JUMP = -1;
     player.G_CONST = 10;
     player.src = new SpriteMap('assets/small8bitcrows.png', {
@@ -540,8 +520,8 @@ function setup(first) {
         slideRight: [1, 2, 1, 2],
         jumpLeft: [0, 6, 0, 8],
         jumpRight: [1, 6, 1, 8],
-        throwLeft: [0, 10, 0, 11],
-        throwRight: [1, 10, 1, 11],
+        throwLeft: [0, 11, 0, 11],
+        throwRight: [1, 11, 1, 11],
         fall: [1, 6, 1, 8],
         jump: [1, 6, 1, 8],
     }, {

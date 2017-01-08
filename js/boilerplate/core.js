@@ -74,7 +74,7 @@ App.MIN_FPS = 4;
  * @member App
  * @static
  */
-App.MAX_FPS = 100;
+App.MAX_FPS = 60;
 /**
  * @property
  *   The total amount of time simulated, in seconds.
