@@ -219,7 +219,6 @@ SpriteMap.prototype = {
    *   default sequence is to show the whole sprite sheet.
    */
   runOnce: function(callback, name) {
-    debugger;
     if (name) {
       this.use(name);
     }

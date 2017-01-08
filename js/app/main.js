@@ -14,6 +14,7 @@ var background, solid, purpleTrees = new Collection();
  * All flying bullets in our world.
  */
 var bullets = new Collection();
+var chestnuts = new Collection();
 var enemies = new Collection();
 var eggs = new Collection();
 var timer = new Timer();
@@ -78,23 +79,18 @@ function touchHandler(e) {
  * An array of image file paths to pre-load.
  */
 var preloadables = [
-    'assets/kraai.png',
+    'assets/small8bitowls.png',
+    'assets/small8bitowlsWithDeadOwls.png',
+    'assets/small8bitcrows.png',
+    'assets/small8bitchestnut.png',
     'assets/achtergrond.png',
-    'assets/kraai-animated2.png',
-    'assets/kraai-animated.png',
-    'assets/AnimatedCrows.png',
     'assets/eikel.png',
     'assets/acorn.png',
     'assets/kuikentje.png',
-    'assets/logo.png',
-    'assets/logo-repeated.png',
     'assets/walnoot.png',
     'assets/paarseboom-small.png',
     'assets/bruineboom-small.png',
     'assets/ei.png',
-    'assets/uil.png',
-    'assets/uil-staand.png',
-    'assets/small8bitowls.png',
     'assets/dpadbutton.png',
     'assets/shootbutton.png',
     'assets/flybutton.png',
@@ -140,10 +136,80 @@ var Acorn = Actor.extend({
         ctx.circle(x + w/2, y + w/2, (w + h) / 4, 'orange', 'black');
     },
 });
+/**
+ * The Chestnut 'bullets' from the crow.
+ */
+var Chestnut = Actor.extend({
+    // Override Actor default properties.
+    MOVEAMOUNT: 20, // Bullet velocity in pixels per second
+    GRAVITY: true, // Just keep going rather than falling down
+    CONTINUOUS_MOVEMENT: false, // Keep going in the last specified direction
+    STAY_IN_WORLD: false, // Let our bullets leave the world (we'll destroy them when they do)
+    DEFAULT_WIDTH: 60,
+    DEFAULT_HEIGHT: 60,
 
-//
-// Util functions (mostly lodash) below
-//
+    src: new SpriteMap('assets/small8bitchestnut.png', {
+        stand: [0, 0, 0, 8],
+    }, {
+        frameW: 192, /* orig: 662 */
+        frameH: 200, /* orig: 680 */
+        interval: 75,
+        useTimer: false,
+    }),
+
+    /**
+     * Initialize a thrown Chestnut.
+     *
+     * @param direction
+     *   An array of keys representing the Bullet's initial direction.
+     * @param x
+     *   The x-coordinate of the top-left corner of the Bullet.
+     * @param y
+     *   The y-coordinate of the top-left corner of the Bullet.
+     */
+    init: function(direction, x, y) {
+        // Invoke the parent's init() function, Actor.prototype.init().
+        this._super(x, y);
+        // Store the direction we want the bullet to go. The CONTINUOUS_MOVEMENT
+        // setting uses this property to keep going in the specified direction.
+        this.lastLooked = direction;
+    },
+    /**
+     * Override drawDefault() to draw a bullet when there isn't an image associated with it (src === null).
+     */
+    drawDefault: function(ctx, x, y, w, h) {
+        // This draws a circle onto the graphics context (i.e. the canvas).
+        // Parameters are x-coordinate of center, y-coordinate of center, radius, fill color, border color
+        ctx.circle(x + w/2, y + w/2, (w + h) / 4, 'orange', 'black');
+    },
+});
+
+/**
+ * Bind to the "shoot" key(s) and create a new chestnut.
+ *
+ * Change keyup to keydown to be able to hold down the shoot key.
+ */
+jQuery(document).keyup(keys.shoot.join(' '), function () {
+        console.log('Chestnut firing');
+        var now = Date.now();
+        // Throttle Chestnut firing.
+        if (now > (player._lastFired || 0) + 170 && isAnimating()) {
+            player._lastFired = now;
+            // Drop the chestnut
+            var animationName =
+                player.lastLooked.length ? (player.lastLooked === keys.left ? 'throwLeft' : 'throwRight') : ('throwRight');
+            // Center on the player.
+            var x = player.x + player.width * 0.5,
+                y = player.y + player.height * 0.5;
+
+            player.status = 'throwing';
+            setTimeout(function () {
+                chestnuts.add(new Chestnut(keys.down, x, y));
+            }, 100);
+            setTimeout(function () {player.status = 'moving'}, 400);
+        }
+    }
+);
 
 function pairwise(list) {
     if (list.length < 2) { return []; }
@@ -165,14 +231,6 @@ var Egg = Actor.extend({
     STAY_IN_WORLD: true,
 });
 
-//
-// (function (x) {
-//     // console.log(JSON.stringify(enemy));
-//     return function createBullet() {
-//         console.log(JSON.stringify(x));
-//         createAcorn(keys.left, x.xC(), x.yC());
-//         x.src.runOnce(throwAcornRecoil(x)
-
 /**
  * A magic-named function where all updates should occur.
  */
@@ -192,6 +250,8 @@ function update() {
         _.last(p).collideSolid(_.head(p));
     });
 
+    chestnuts.forEach(function (chestnut){chestnut.update();});
+
     bullets.forEach(function(bullet) {
         bullet.update();
         if (bullet.overlaps(player)) {
@@ -201,6 +261,27 @@ function update() {
         // Destroy the bullet if it hits a solid or goes out of the world.
         return bullet.collides(solid) || !world.isInWorld(bullet, true);
     });
+
+    chestnuts.forEach(
+        function (chestnut) {
+            // Check if we hit an evil owl:
+            enemies.forEach(
+                function (owl) {
+                    if (chestnut.overlaps(owl)) {
+                        owl.status = 'dead';
+                        owl.src.runOnce((function (owl) {
+                            return function fn(spr) {
+                                spr.spriteMap.start('deadLeft');
+                            };
+                        })(owl), 'dyingLeft');
+                    }
+                }
+            );
+
+            // Returning true removes the bullet from the collection.
+            // Destroy the bullet if it hits a solid or goes out of the world.
+            return chestnut.collides(solid) || !world.isInWorld(chestnut, true);
+        });
 
     // enforce collision
     player.collideSolid(solid);
@@ -233,23 +314,25 @@ function update() {
                     bullets.add(acorn);
                     spr.spriteMap.runOnce(function (spr2) {
                         if (owl.xC() !== undefined) {
-                            spr2.spriteMap.start('stand');
+                            spr2.spriteMap.start('stand'); // Stand
                         }
-                    }, 'recoil');
+                    }, 'recoil'); // Recoil
                 };
             })(owl), 'throw');
         })();
     }
 
     // Throw the acorn baby
-    if (timer.getElapsedTime() > 7 && !throwing) {
+    if (timer.getElapsedTime() > 5 && !throwing) {
         throwing = true;
 
-        for(var i = 0; i < 5; i++) {
-            createClosure(enemies[i]);
-        }
+        enemies.forEach(function (owl) {
+            if (owl.status === 'alive') {
+                createClosure(owl);
+            }
+        });
     }
-    if (throwing && timer.getElapsedTime() > 9) {
+    if (throwing && timer.getElapsedTime() > 6) {
         timer.stop();
         timer = new Timer();
         throwing = false;
@@ -267,6 +350,7 @@ function draw() {
     player.draw();
     enemies.draw();
     bullets.draw();
+    chestnuts.draw();
     hud.draw();
 
     // Timer
@@ -278,7 +362,7 @@ function draw() {
 /**
  * A magic-named function for one-time setup.
  *
- * @param {Boolean} first
+ * @param {Boolean}
  *   true if the app is being set up for the first time; false if the app has
  *   been reset and is starting over.
  */
@@ -310,19 +394,24 @@ function setup(first) {
 
     var Owl = Actor.extend({
         init: function (x, y, w, h) {
-            this._super.apply(this, [x, y - 40, 140, 120]);
-            this.src = new SpriteMap('assets/small8bitowls.png', {
+            this._super.apply(this, [x, y - 40, 130, 130]);
+            this.src = new SpriteMap('assets/small8bitowlsWithDeadOwls.png', {
                 stand: [0, 0, 0, 0],
                 ready: [0, 1, 0, 1],
                 throw: [0, 1, 0, 5],
                 recoil: [0, 6, 0, 9],
+                dyingLeft: [0, 10, 0, 11],
+                dyingRight: [1, 10, 1, 11],
+                deadLeft: [0, 11, 0, 11],
+                deadRight: [1, 11, 1, 11],
             }, {
                 frameW: 192, /* orig: 662 */
                 frameH: 200, /* orig: 680 */
-                interval: 80,
+                interval: 75,
                 useTimer: true,
             });
-        }
+        },
+        status: 'alive'
     });
 
     var PurpleTree = Actor.extend({
@@ -341,7 +430,7 @@ function setup(first) {
                 "                        AAAA                                  \n" +
                 "                                                              \n" +
                 "                  U                                           \n" +
-                "                                                              \n" +
+                "                         U  U                                 \n" +
                 "                   P     AAAA                                 \n" +
                 "                   AAA                                        \n" +
                 "                AAA                                           \n" +
@@ -350,9 +439,10 @@ function setup(first) {
                 " AAAAAAAAAA                             U                     \n" +
                 "                       U  YYYYYYYYYYYYYYYYYY                  \n" +
                 "                                                              \n" +
-                "                                                              \n" +
-                "                      P                                       \n" +
+                "             E                                                \n" +
+                "           E E         P          E                  U        \n" +
                 "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
     var height = grid.indexOf("\n") * 80;
     var width = grid.substring(0, grid.indexOf("\n")).length * 80;
 
@@ -389,9 +479,35 @@ function setup(first) {
 
     });
 
-    // var purpleTree = new PurpleTree(height * 80 - 2170, world.height-660, 300, 600);
+    var background_old = new Layer({width: world.width, src: 'assets/achtergrond.png'});
 
-    background = new Layer({width: world.width, src: 'assets/achtergrond.png'});
+    background = new Layer({
+        src: 'assets/achtergrond.png',
+        x: 0,
+        y: 0,
+        width: world.width,
+        height: world.height,
+    });
+    var ca = document.createElement('canvas');
+    background.context.drawPattern(ca, 0, 0, background.width, background.height, 'repeat-x');
+
+    // zoiets nog doen:
+    //
+    // var canvas = document.getElementById("canvas"),
+    //     context = canvas.getContext("2d"),
+    //     img = new Image();
+    //
+    // img.src = 'https://www.google.nl/images/srpr/logo3w.png';
+    //
+    // img.onload = function(){
+    //     // create pattern
+    //     var ptrn = context.createPattern(img, 'repeat'); // Create a pattern with this image, and set it to "repeat".
+    //     context.fillStyle = ptrn;
+    //     context.fillRect(0, 0, canvas.width, canvas.height); // context.fillRect(x, y, width, height);
+    // }
+
+
+
 
     // Set up the Heads-Up Display layer.
     // This layer will stay in place even while the world scrolls.
@@ -412,10 +528,9 @@ function setup(first) {
 
     // Initialize the player.
     player = new Player(200, 200, 120, 120);
-    // player.DAMPING_FACTOR = 10;
     player.MULTI_JUMP = -1;
     player.G_CONST = 10;
-    player.src = new SpriteMap('assets/AnimatedCrows.png', {
+    player.src = new SpriteMap('assets/small8bitcrows.png', {
         stand: [1, 5, 1, 5],
         left: [0, 0, 0, 4],
         right: [1, 0, 1, 4],
@@ -425,11 +540,13 @@ function setup(first) {
         slideRight: [1, 2, 1, 2],
         jumpLeft: [0, 6, 0, 8],
         jumpRight: [1, 6, 1, 8],
+        throwLeft: [0, 10, 0, 11],
+        throwRight: [1, 10, 1, 11],
         fall: [1, 6, 1, 8],
         jump: [1, 6, 1, 8],
     }, {
-        frameW: 662,
-        frameH: 680,
+        frameW: 192, /* orig: 662 */
+        frameH: 200, /* orig: 680 */
         interval: 75,
         useTimer: false,
     });

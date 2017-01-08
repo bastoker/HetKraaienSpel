@@ -1332,16 +1332,32 @@ var Actor = Box.extend({
         }
         else if (this.isInAir()) {
             if (this.x > this.lastX) {
+                if (this.status == 'throwing') {
+                    this.useAnimation('throwRight', 'lookRight', 'stand');
+                } else {
                 this.useAnimation('jumpRight', 'lookRight', 'stand');
+                }
             }
             else if (this.x < this.lastX) {
-                this.useAnimation('jumpLeft', 'lookLeft', 'stand');
+                if (this.status == 'throwing') {
+                    this.useAnimation('throwLeft', 'lookLeft', 'stand');
+                } else {
+                    this.useAnimation('jumpLeft', 'lookLeft', 'stand');
+                }
             }
             else if (this.isJumping()) {
-                this.useAnimation('jump', 'stand');
+                if (this.status == 'throwing') {
+                    this.useAnimation('throwRight', 'lookRight', 'stand');
+                } else {
+                    this.useAnimation('jump', 'stand');
+                }
             }
             else {
-                this.useAnimation('fall', 'stand');
+                if (this.status == 'throwing') {
+                    this.useAnimation('throwRight', 'lookRight', 'stand');
+                } else {
+                    this.useAnimation('fall', 'stand');
+                }
             }
         }
         else if (this.y > this.lastY) {
@@ -1696,4 +1712,5 @@ var Player = Actor.extend({
         this._super.apply(this, arguments);
         jQuery(document).off('.release', this.__keytracker);
     },
+    status: 'moving' // other supported value is 'throwing'
 });
